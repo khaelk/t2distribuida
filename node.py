@@ -1,6 +1,7 @@
 import sys
 import time as timer
 import socket
+import threading
 
 #leitura de variaveis de inicializacao por parametro
 try:
@@ -38,10 +39,11 @@ def berkeleyCooldown():
         if diff>cooldown:
             berkeley = timer.time()
             print("Disparando novo calculo")
+            threading.Thread(target=calculo).start()
 
 #calculo feito do algoritmo
 def calculo():
-    return
+    print('banana')
 
 #processo mestre sempre sera o com id 0
 if id == '0':
