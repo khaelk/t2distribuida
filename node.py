@@ -43,7 +43,12 @@ def berkeleyCooldown():
 
 #calculo feito do algoritmo
 def calculo():
-    print('banana')
+    send.sendto(bytes("SENDTIME;", "utf8"), ('127.0.0.1', 1025)) # ajustar para enviar para todos nodos
+    #apos envio receber
+    #comunicacao (sends) feita 2 vezes quando peco o tempo
+    #(aqui no meio fica o calculo aritmetico)
+    #e quando atualizo o tempo
+    #finaliza enviando os tempos atualizados
 
 #processo mestre sempre sera o com id 0
 if id == '0':
@@ -52,4 +57,11 @@ if id == '0':
 #demais processos
 else:
     print("Inicializando nodo...")
+    while True:
+        print("Esperando recebimento de ordem")
+        #packet -> msg str com operacao a ser feita
+        #client -> (ip do client, porta que enviou)
+        packet, client = recv.recvfrom(int(port))
+        recvPacket = str(packet, "utf8")
+        print(recvPacket, client)
 
