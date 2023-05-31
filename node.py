@@ -2,6 +2,7 @@ import sys
 import time as timer
 import socket
 import threading
+from time import sleep
 
 #leitura de variaveis de inicializacao por parametro
 try:
@@ -30,17 +31,6 @@ recv.bind(receiver)
 def readNodes(arq):
     return
 
-#timer de cooldown de chamada do algoritmo
-def berkeleyCooldown():
-    global berkeley
-    global cooldown
-    while True:
-        diff = timer.time() - berkeley
-        if diff>cooldown:
-            berkeley = timer.time()
-            print("Disparando novo calculo")
-            threading.Thread(target=calculo).start()
-
 #calculo feito do algoritmo
 def calculo():
     send.sendto(bytes("SENDTIME;", "utf8"), ('127.0.0.1', 1025)) # ajustar para enviar para todos nodos
@@ -53,7 +43,12 @@ def calculo():
 #processo mestre sempre sera o com id 0
 if id == '0':
     print("Inicializando processo mestre...")
-    berkeleyCooldown()
+    #quando inicializa o mestre realizar reconhecimento
+    while True:
+        calculo()
+
+        #sleep de cooldown para executar o algoritmo novamente
+        sleep(cooldown)
 #demais processos
 else:
     print("Inicializando nodo...")
