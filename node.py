@@ -1,8 +1,7 @@
 import sys
-import time as timer
 import socket
-import threading
 from time import sleep
+import datetime
 
 #leitura de variaveis de inicializacao por parametro
 try:
@@ -20,6 +19,11 @@ except IndexError:
 cooldown = 30
 berkeley = 0
 
+ct = datetime.datetime.now()
+print(ct)
+ts = ct.timestamp()
+print(ts)
+
 #sockets de recebimento / envio msgs
 send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -29,11 +33,22 @@ recv.bind(receiver)
 
 #leitura de nodos disponiveis
 def readNodes(arq):
-    return
+    ipPortas = []
+    with open(arq, 'r') as f:
+        for line in f:
+            ipPortas.append(line.rstrip("\n"))
+    return ipPortas
 
 #calculo feito do algoritmo
-def calculo():
-    send.sendto(bytes("SENDTIME;", "utf8"), ('127.0.0.1', 1025)) # ajustar para enviar para todos nodos
+def calculo(ipPortas):
+    print("Enviando mensagem para todos nodos, ordem: SENDTIME")
+    for node in ipPortas:
+        print("Enviando ordem de envio de tempo SENDTIME para o nodo de IP:PORTA", node)
+        send.sendto(bytes("SENDTIME;", "utf8"), (node.split(":")[0], int(node.split(":")[1]))) # ajustar para enviar para todos nodos
+        #adicionar timeout de finalizar programa aqui caso nao receba em certo tempo
+        recvPacket, client = recv.recvfrom(1024)
+        print(recvPacket, client)
+    
     #apos envio receber
     #comunicacao (sends) feita 2 vezes quando peco o tempo
     #(aqui no meio fica o calculo aritmetico)
@@ -43,10 +58,11 @@ def calculo():
 #processo mestre sempre sera o com id 0
 if id == '0':
     print("Inicializando processo mestre...")
-    #quando inicializa o mestre realizar reconhecimento
+    #quando inicializa o mestre settar nodos
+    ipPortas = readNodes("nodes.txt")
+    print("Lista de IPs e portas dos nodos: ",ipPortas)
     while True:
-        calculo()
-
+        calculo(ipPortas)
         #sleep de cooldown para executar o algoritmo novamente
         sleep(cooldown)
 #demais processos
@@ -58,5 +74,14 @@ else:
         #client -> (ip do client, porta que enviou)
         packet, client = recv.recvfrom(int(port))
         recvPacket = str(packet, "utf8")
-        print(recvPacket, client)
+        print("Ordem recebida: ", recvPacket, client)
+        if recvPacket.split(";")[0] == "SENDTIME":
+            #envio o meu tempo
+            time = 0
+            print("Executando ordem de envio de tempo")
+            send.sendto(bytes("bnana", "utf8"), (str(client[0]), 1024))
+        elif recvPacket.split(";")[0] == "UPDATETIME":
+            #atualizo o o tempo
+            time = 0
+            print("Executando ordem de atualizacao de tempo")
 
