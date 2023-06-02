@@ -51,9 +51,10 @@ def calculo(ipPortas):
         #adicionar timeout de finalizar programa aqui caso nao receba em certo tempo
         try:
             recvPacket, client = recv.recvfrom(1024)
-        except recv.timeout as e:
-            print("Erro no recebimento de tempos dos nodos")
-        print(recvPacket, client)
+        except Exception as e:
+            print("Erro no recebimento do tempo de um nodo!")
+            exit()
+        print("TIME:",int(recvPacket), client)
         times.append(str(recvPacket))
     tList = times.copy()
     #(aqui fica o calculo aritmetico usando tList)
@@ -72,7 +73,7 @@ if id == '0':
     #quando inicializa o mestre settar nodos
     ipPortas = readNodes("nodes.txt")
     #set timeout para recebimento de tempo dos nodos
-    recv.settimeout(30)
+    recv.settimeout(10)
     print("Lista de IPs e portas dos nodos cadastrados em nodos.txt: ",ipPortas)
     while True:
         calculo(ipPortas)
