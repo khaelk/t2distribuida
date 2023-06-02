@@ -48,7 +48,6 @@ def calculo(ipPortas):
     for node in ipPortas:
         print("Enviando ordem de envio de tempo SENDTIME para o nodo de IP:PORTA", node)
         send.sendto(bytes("SENDTIME;", "utf8"), (node.split(":")[0], int(node.split(":")[1]))) # ajustar para enviar para todos nodos
-        #adicionar timeout de finalizar programa aqui caso nao receba em certo tempo
         try:
             recvPacket, client = recv.recvfrom(1024)
         except Exception as e:
