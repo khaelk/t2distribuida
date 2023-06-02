@@ -1,5 +1,6 @@
 import sys
 import socket
+import time
 from time import sleep
 import datetime
 
@@ -8,7 +9,7 @@ try:
     id = sys.argv[1]
     host = sys.argv[2]
     port = sys.argv[3]
-    time = sys.argv[4]
+    timeSt = sys.argv[4]
     ptime = sys.argv[5]
     adelay = sys.argv[6]
 except IndexError:
@@ -42,25 +43,37 @@ def readNodes(arq):
 #calculo feito do algoritmo
 def calculo(ipPortas):
     print("Enviando mensagem para todos nodos, ordem: SENDTIME")
+    times = []
+    times.append(timeSt)
     for node in ipPortas:
         print("Enviando ordem de envio de tempo SENDTIME para o nodo de IP:PORTA", node)
         send.sendto(bytes("SENDTIME;", "utf8"), (node.split(":")[0], int(node.split(":")[1]))) # ajustar para enviar para todos nodos
         #adicionar timeout de finalizar programa aqui caso nao receba em certo tempo
-        recvPacket, client = recv.recvfrom(1024)
+        try:
+            recvPacket, client = recv.recvfrom(1024)
+        except recv.timeout as e:
+            print("Erro no recebimento de tempos dos nodos")
         print(recvPacket, client)
-    
-    #apos envio receber
-    #comunicacao (sends) feita 2 vezes quando peco o tempo
-    #(aqui no meio fica o calculo aritmetico)
-    #e quando atualizo o tempo
-    #finaliza enviando os tempos atualizados
+        times.append(str(recvPacket))
+    tList = times.copy()
+    #(aqui fica o calculo aritmetico usando tList)
+    #while flag != true
+    #   media de valores em times
+    #   check se ninguem distoa > 10s se distoa removo da lista e chama media de novo
+    #   se ninguem distoa seto flag == false
+    #   
+    #com a media calculo tp1 = avg - times[tp1] + rtt/2
+    #lista times order == nodes.txt order, logo for node in ipPortas...
+    #send atualizacao do tempo (qual tempo deve ser imposto aos nodos)
 
 #processo mestre sempre sera o com id 0
 if id == '0':
     print("Inicializando processo mestre...")
     #quando inicializa o mestre settar nodos
     ipPortas = readNodes("nodes.txt")
-    print("Lista de IPs e portas dos nodos: ",ipPortas)
+    #set timeout para recebimento de tempo dos nodos
+    recv.settimeout(30)
+    print("Lista de IPs e portas dos nodos cadastrados em nodos.txt: ",ipPortas)
     while True:
         calculo(ipPortas)
         #sleep de cooldown para executar o algoritmo novamente
@@ -70,7 +83,7 @@ else:
     print("Inicializando nodo...")
     while True:
         print("Esperando recebimento de ordem")
-        #packet -> msg str com operacao a ser feita
+        #packet -> msg str com comandos
         #client -> (ip do client, porta que enviou)
         packet, client = recv.recvfrom(int(port))
         recvPacket = str(packet, "utf8")
@@ -79,9 +92,11 @@ else:
             #envio o meu tempo
             time = 0
             print("Executando ordem de envio de tempo")
-            send.sendto(bytes("bnana", "utf8"), (str(client[0]), 1024))
+            #count time here
+            send.sendto(bytes(str(time), "utf8"), (str(client[0]), 1024))
         elif recvPacket.split(";")[0] == "UPDATETIME":
             #atualizo o o tempo
-            time = 0
-            print("Executando ordem de atualizacao de tempo")
+            print("Executando ordem de atualizacao de tempo para", recvPacket.split(";")[1])
+            time = recvPacket.split(";")[1]
+            print("Meu novo tempo: ", time)
 
