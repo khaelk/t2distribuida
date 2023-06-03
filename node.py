@@ -1,6 +1,5 @@
 import sys
 import socket
-import time
 from time import sleep
 import datetime
 
@@ -9,9 +8,11 @@ try:
     id = sys.argv[1]
     host = sys.argv[2]
     port = sys.argv[3]
-    timeSt = sys.argv[4]
-    ptime = sys.argv[5]
-    adelay = sys.argv[6]
+    inputs = sys.argv[4].split(":")
+    #100,1,1 dummy date for years months days
+    myTime = datetime.datetime(100,1,1, int(inputs[0]), int(inputs[1]), 0) + datetime.timedelta(seconds=float(inputs[2]))
+    ptime = float(sys.argv[5])
+    adelay = float(sys.argv[6])
 except IndexError:
     print("ERROR: invalid parameters")
     sys.exit(0)
@@ -20,10 +21,6 @@ except IndexError:
 cooldown = 30
 berkeley = 0
 
-ct = datetime.datetime.now()
-print(ct)
-ts = ct.timestamp()
-print(ts)
 
 #sockets de recebimento / envio msgs
 send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -44,7 +41,7 @@ def readNodes(arq):
 def calculo(ipPortas):
     print("Enviando mensagem para todos nodos, ordem: SENDTIME")
     times = []
-    times.append(timeSt)
+    times.append(myTime)
     for node in ipPortas:
         print("Enviando ordem de envio de tempo SENDTIME para o nodo de IP:PORTA", node)
         send.sendto(bytes("SENDTIME;", "utf8"), (node.split(":")[0], int(node.split(":")[1]))) # ajustar para enviar para todos nodos
@@ -69,6 +66,7 @@ def calculo(ipPortas):
 #processo mestre sempre sera o com id 0
 if id == '0':
     print("Inicializando processo mestre...")
+    print(myTime.time())
     #quando inicializa o mestre settar nodos
     ipPortas = readNodes("nodes.txt")
     #set timeout para recebimento de tempo dos nodos
@@ -90,13 +88,12 @@ else:
         print("Ordem recebida: ", recvPacket, client)
         if recvPacket.split(";")[0] == "SENDTIME":
             #envio o meu tempo
-            time = 0
             print("Executando ordem de envio de tempo")
             #count time here
             send.sendto(bytes(str(time), "utf8"), (str(client[0]), 1024))
         elif recvPacket.split(";")[0] == "UPDATETIME":
             #atualizo o o tempo
             print("Executando ordem de atualizacao de tempo para", recvPacket.split(";")[1])
-            time = recvPacket.split(";")[1]
-            print("Meu novo tempo: ", time)
+            myTime = recvPacket.split(";")[1]
+            print("Meu novo tempo: ", myTime)
 
