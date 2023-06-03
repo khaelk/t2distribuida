@@ -21,6 +21,7 @@ except IndexError:
 cooldown = 30
 berkeley = 0
 
+date_format = '%Y-%m-%d %H:%M:%S'
 
 #sockets de recebimento / envio msgs
 send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -44,14 +45,17 @@ def calculo(ipPortas):
     times.append(myTime)
     for node in ipPortas:
         print("Enviando ordem de envio de tempo SENDTIME para o nodo de IP:PORTA", node)
-        send.sendto(bytes("SENDTIME;", "utf8"), (node.split(":")[0], int(node.split(":")[1]))) # ajustar para enviar para todos nodos
+        send.sendto(bytes("SENDTIME", "utf8"), (node.split(":")[0], int(node.split(":")[1]))) # ajustar para enviar para todos nodos
         try:
             recvPacket, client = recv.recvfrom(1024)
         except Exception as e:
             print("Erro no recebimento do tempo de um nodo!")
             exit()
-        print("TIME:",int(recvPacket), client)
-        times.append(str(recvPacket))
+        #transforma msg em bytes recebida em datetime obj
+        date_str = recvPacket.decode()
+        date_obj = datetime.datetime.strptime(date_str, date_format)
+        print("TIME:", date_obj, client)
+        times.append(date_obj)
     tList = times.copy()
     #(aqui fica o calculo aritmetico usando tList)
     #while flag != true
@@ -63,6 +67,13 @@ def calculo(ipPortas):
     #com a media calculo tp1 = avg - times[tp1] + rtt/2
     #lista times order == nodes.txt order, logo for node in ipPortas...
     #send atualizacao do tempo (qual tempo deve ser imposto aos nodos)
+    
+    print("Enviando mensagem para todos nodos, ordem: UPDATETIME")
+    #ajustar for para percorrer 2 listas -> tempos atualizados e de nodos
+    for node in ipPortas:
+        print("Enviando ordem de atualizacao de tempo para o nodo de IP:PORTA", node)
+        #           myTime é o tempo que o nodo deve por
+        send.sendto(myTime, (node.split(":")[0], int(node.split(":")[1])))
 
 #processo mestre sempre sera o com id 0
 if id == '0':
@@ -87,15 +98,18 @@ else:
         packet, client = recv.recvfrom(int(port))
         recvPacket = str(packet, "utf8")
         print("Ordem recebida: ", recvPacket, client)
-        if recvPacket.split(";")[0] == "SENDTIME":
+        if recvPacket == "SENDTIME":
             #envio o meu tempo
             print("Executando ordem de envio de tempo")
             #count time here
-            send.sendto(bytes(str(time), "utf8"), (str(client[0]), 1024))
-        elif recvPacket.split(";")[0] == "UPDATETIME":
+            myTimeStr = str(myTime)
+            send.sendto(myTimeStr.encode(), (str(client[0]), 1024))
+        else:
             #atualizo o o tempo
             print("Executando ordem de atualizacao de tempo para", recvPacket.split(";")[1])
             #no envio de tempo no master usar datetime.encode
-            myTime = recvPacket.split(";")[1]
+            date_str = recvPacket.decode()
+            date_obj = datetime.datetime.strptime(date_str, date_format)
+            myTime = date_obj
             print("Meu novo tempo: ", myTime)
 
