@@ -57,6 +57,7 @@ def calculo(ipPortas):
     #while flag != true
     #   media de valores em times
     #   check se ninguem distoa > 10s se distoa removo da lista e chama media de novo
+    #   caso todos distoem o avg vira myTime
     #   se ninguem distoa seto flag == false
     #   
     #com a media calculo tp1 = avg - times[tp1] + rtt/2
@@ -94,6 +95,7 @@ else:
         elif recvPacket.split(";")[0] == "UPDATETIME":
             #atualizo o o tempo
             print("Executando ordem de atualizacao de tempo para", recvPacket.split(";")[1])
+            #no envio de tempo no master usar datetime.encode
             myTime = recvPacket.split(";")[1]
             print("Meu novo tempo: ", myTime)
 
