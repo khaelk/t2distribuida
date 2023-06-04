@@ -56,14 +56,26 @@ def calculo(ipPortas):
         date_obj = datetime.datetime.strptime(date_str, date_format)
         print("TIME:", date_obj, client)
         times.append(date_obj)
-    tList = times.copy()
+    tList = map(datetime.datetime.timestamp(), times.copy())
+
+    avg = 0
+    flag = False
     #(aqui fica o calculo aritmetico usando tList)
-    #while flag != true
-    #   media de valores em times
+    while flag != True:
+    #   caso todos distoem o avg vira myTime (master time)
+        if len(tList) == 0:
+            avg = myTime.timestamp()
+            break
+    #   media de valores em timestamp
+        avg = sum(tList) / len(tList)
+    #   se ninguem distoa seto flag == True finalizando calc media
+        flag = True
     #   check se ninguem distoa > 10s se distoa removo da lista e chama media de novo
-    #   caso todos distoem o avg vira myTime
-    #   se ninguem distoa seto flag == false
-    #   
+        for i in range(len(tList)):
+            if abs(tList[i]-avg)>10:
+                tList.pop(i)
+                flag = False
+
     #com a media calculo tp1 = avg - times[tp1] + rtt/2
     #lista times order == nodes.txt order, logo for node in ipPortas...
     #send atualizacao do tempo (qual tempo deve ser imposto aos nodos)
