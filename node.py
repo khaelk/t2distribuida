@@ -90,6 +90,7 @@ def calculo(ipPortas):
     #   se ninguem distoa seto flag == True finalizando calc media
         flag = True
         print("AVG", n, ":", avg)
+        n = n+1
     #   check se ninguem distoa > 10s se distoa removo da lista e chama media de novo
         tAux = []
         tAux[:] = [x for x in tList if abs(x-avg)<=mean_diff]
