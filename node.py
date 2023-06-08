@@ -46,7 +46,7 @@ def clocker():
     while True:
         sleep(1)
         myTime = datetime.datetime.fromtimestamp(datetime.datetime.timestamp(myTime) + 1)
-        print(myTime)
+        print(myTime.time())
 
 #calculo feito do algoritmo
 def calculo(ipPortas):
@@ -73,6 +73,7 @@ def calculo(ipPortas):
         print("Time recebido:", datetime.datetime.fromtimestamp(date_ts).time(), client)
         #diferença do meu tempo atual ao horario recebido
         delta = datetime.datetime.timestamp(myTime) - date_ts
+        print(f'{datetime.datetime.timestamp(myTime)} - {date_ts}')
         print("Delta:", delta, "s")
         deltas.append(delta)
         rtts.append(rtt)
@@ -90,9 +91,11 @@ def calculo(ipPortas):
         if len(tList) == 0:
             print("Tempos muito distoantes setto o meu tempo.")
             avg = datetime.datetime.timestamp(myTime)
+            print("AVG", n, ":", avg)
             break
     #   media de valores em timestamp
         avg = (sum(tList)) / len(tList)
+        print(f'sum{tList} / {len(tList)}')
     #   se ninguem distoa seto flag == True finalizando calc media
         flag = True
         print("AVG", n, ":", avg)
@@ -116,7 +119,7 @@ def calculo(ipPortas):
     for node in ipPortas:
         #com a media calculo tp1 = avg - times[tp1] + rtt/2
         newT = avg - times[index] + rtts[index]/2 # + RTT
-        print("Enviando ordem de atualizacao de tempo para o nodo de IP:PORTA", node, newT)
+        print("Enviando ordem de atualizacao de tempo para o nodo de IP:PORTA", node, "em", newT, "s")
         newT = str(newT)
         send.sendto(newT.encode(), (node.split(":")[0], int(node.split(":")[1])))
         index = index + 1
@@ -160,4 +163,3 @@ else:
             real_date = datetime.datetime.timestamp(myTime) + date_ts
             myTime = datetime.datetime.fromtimestamp(real_date)
             print("Meu novo tempo: ", myTime.time())
-
