@@ -134,7 +134,7 @@ def calculo(ipPortas):
     for node in ipPortas:
         #com a media calculo tp1 = avg - times[tp1] + rtt/2
         newT = avg - times[index] + rtts[index]/2 # + RTT
-        print("Enviando ordem de atualizacao de tempo para o nodo de IP:PORTA", node, "em", newT, "s")
+        print("Enviando ordem de atualizacao de tempo para o nodo de IP:PORTA", node, "para", newT, "s")
         newT = str(newT)
         send.sendto(newT.encode(), (node.split(":")[0], int(node.split(":")[1])))
         index = index + 1
