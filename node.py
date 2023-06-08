@@ -19,6 +19,13 @@ try:
 except IndexError:
     print("ERROR: invalid parameters")
     sys.exit(0)
+    
+ticking = 1000
+try:
+    ticking = sys.argv[7]
+except IndexError:
+    print("Setting default ticking: 1000ms")
+    pass
 
 # Variaveis de controle do tempo de que deve ser chamado calculo mestre
 cooldown = 30
@@ -44,7 +51,7 @@ def readNodes(arq):
 def clocker():
     global myTime
     while True:
-        sleep(1)
+        sleep(ticking/1000)
         myTime = datetime.datetime.fromtimestamp(datetime.datetime.timestamp(myTime) + 1)
         print(myTime.time())
 
