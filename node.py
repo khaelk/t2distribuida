@@ -19,7 +19,7 @@ try:
 except IndexError:
     print("ERROR: invalid parameters")
     sys.exit(0)
-    
+
 ticking = 1000
 try:
     ticking = sys.argv[7]
@@ -51,7 +51,7 @@ def readNodes(arq):
 def clocker():
     global myTime
     while True:
-        sleep(ticking/1000)
+        sleep(int(ticking)/1000)
         myTime = datetime.datetime.fromtimestamp(datetime.datetime.timestamp(myTime) + 1)
         print(myTime.time())
 
