@@ -50,6 +50,7 @@ def calculo(ipPortas):
     print("Enviando mensagem para todos nodos, ordem: SENDTIME")
     times = []
     tList = []
+    deltas = []
     rtts = []
     for node in ipPortas:
         print("Enviando ordem de envio de tempo SENDTIME para o nodo de IP:PORTA", node)
@@ -66,13 +67,21 @@ def calculo(ipPortas):
         date_str = recvPacket.decode()
         date_ts = float(date_str)
         print("Time recebido:", datetime.datetime.fromtimestamp(date_ts).time(), client)
-        times.append(date_ts)
-        tList.append(date_ts)
+        end_time = time.time()
+        #diferença do meu tempo atual ao horario recebido
+        delta = datetime.datetime.timestamp(myTime) + end_time - start_time - date_ts
+        print("Delta:", delta, "s")
+        deltas.append(delta)
         rtts.append(rtt)
     end_time = time.time()
     tList.append(datetime.datetime.timestamp(myTime) + end_time - start_time)
-    print(datetime.datetime.fromtimestamp(datetime.datetime.timestamp(myTime) + end_time - start_time))
-    print(datetime.datetime.fromtimestamp(times[0]))
+    print(deltas)
+    for d in deltas:
+        times.append(datetime.datetime.timestamp(myTime) + end_time - start_time - d)
+        tList.append(datetime.datetime.timestamp(myTime) + end_time - start_time - d)
+        print(datetime.datetime.fromtimestamp(datetime.datetime.timestamp(myTime) + end_time - start_time + d))
+    #print(datetime.datetime.fromtimestamp(datetime.datetime.timestamp(myTime) + end_time - start_time))
+    #print(datetime.datetime.fromtimestamp(times[0]))
     avg = 0
     n = 1
     flag = False
