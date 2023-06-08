@@ -27,6 +27,13 @@ except IndexError:
     print("Setting default ticking: 1000ms")
     pass
 
+timePassingDisplay = 1
+try:
+    timePassingDisplay = sys.argv[8]
+except IndexError:
+    print("Setting time display to default: 1")
+    pass
+
 # Variaveis de controle do tempo de que deve ser chamado calculo mestre
 cooldown = 30
 berkeley = 0
@@ -53,7 +60,8 @@ def clocker():
     while True:
         sleep(int(ticking)/1000)
         myTime = datetime.datetime.fromtimestamp(datetime.datetime.timestamp(myTime) + 1)
-        print(myTime.time())
+        if int(timePassingDisplay) == 1:
+            print(myTime.time())
 
 #calculo feito do algoritmo
 def calculo(ipPortas):
@@ -80,7 +88,7 @@ def calculo(ipPortas):
         print("Time recebido:", datetime.datetime.fromtimestamp(date_ts).time(), client)
         #diferença do meu tempo atual ao horario recebido
         delta = datetime.datetime.timestamp(myTime) - date_ts
-        print(f'{datetime.datetime.timestamp(myTime)} - {date_ts}')
+        print(f'delta = {datetime.datetime.timestamp(myTime)} - {date_ts}')
         print("Delta:", delta, "s")
         deltas.append(delta)
         rtts.append(rtt)
@@ -102,7 +110,7 @@ def calculo(ipPortas):
             break
     #   media de valores em timestamp
         avg = (sum(tList)) / len(tList)
-        print(f'sum{tList} / {len(tList)}')
+        print(f'average = sum{tList} / {len(tList)}')
     #   se ninguem distoa seto flag == True finalizando calc media
         flag = True
         print("AVG", n, ":", avg)
@@ -110,7 +118,7 @@ def calculo(ipPortas):
     #   check se ninguem distoa > 10s se distoa removo da lista e chama media de novo
         tAux = []
         tAux[:] = [x for x in tList if abs(x-avg)<=mean_diff]
-        print(tList, tAux)
+        #print(tList, tAux)
         if len(tAux) != len(tList):
             tList = tAux
             flag = False
