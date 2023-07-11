@@ -2,6 +2,9 @@ import sys
 import socket
 from time import sleep
 import datetime
+import time
+import threading
+import os
 
 # Leitura de parametros de inicializacao
 try:
@@ -17,11 +20,23 @@ except IndexError:
     print("ERROR: invalid parameters")
     sys.exit(0)
 
+ticking = 1000
+try:
+    ticking = sys.argv[7]
+except IndexError:
+    print("Setting default ticking: 1000ms")
+    pass
+
+timePassingDisplay = 1
+try:
+    timePassingDisplay = sys.argv[8]
+except IndexError:
+    print("Setting time display to default: 1")
+    pass
+
 # Variaveis de controle do tempo de que deve ser chamado calculo mestre
 cooldown = 30
 berkeley = 0
-
-date_format = '%Y-%m-%d %H:%M:%S.%f'
 
 mean_diff = 10
 
@@ -40,73 +55,94 @@ def readNodes(arq):
             ipPortas.append(line.rstrip("\n"))
     return ipPortas
 
+def clocker():
+    global myTime
+    while True:
+        sleep(int(ticking)/1000)
+        myTime = datetime.datetime.fromtimestamp(datetime.datetime.timestamp(myTime) + 1)
+        if int(timePassingDisplay) == 1:
+            print(myTime.time())
+
 #calculo feito do algoritmo
 def calculo(ipPortas):
     global myTime
     print("Enviando mensagem para todos nodos, ordem: SENDTIME")
     times = []
     tList = []
-    tList.append(datetime.datetime.timestamp(myTime))
+    deltas = []
+    rtts = []
     for node in ipPortas:
         print("Enviando ordem de envio de tempo SENDTIME para o nodo de IP:PORTA", node)
         send.sendto(bytes("SENDTIME", "utf8"), (node.split(":")[0], int(node.split(":")[1]))) # ajustar para enviar para todos nodos
+        t1 = datetime.datetime.timestamp(myTime)
         try:
             recvPacket, client = recv.recvfrom(1024)
         except Exception as e:
             print("Erro no recebimento do tempo de um nodo!")
-            exit()
+            os._exit(1)
+        t4 = datetime.datetime.timestamp(myTime)
+        rtt = t4 - t1
         #transforma msg em bytes recebida em datetime obj
         date_str = recvPacket.decode()
         date_ts = float(date_str)
-        print("TIME:", date_ts, client)
-        times.append(date_ts)
-        tList.append(date_ts)
-
+        print("Time recebido:", datetime.datetime.fromtimestamp(date_ts).time(), client)
+        #diferença do meu tempo atual ao horario recebido
+        delta = datetime.datetime.timestamp(myTime) - date_ts
+        print(f'delta = {datetime.datetime.timestamp(myTime)} - {date_ts}')
+        print("Delta:", delta, "s")
+        deltas.append(delta)
+        rtts.append(rtt)
+    tList.append(datetime.datetime.timestamp(myTime))
+    for d in deltas:
+        times.append(datetime.datetime.timestamp(myTime) - d)
+        tList.append(datetime.datetime.timestamp(myTime) - d)
     avg = 0
+    n = 1
     flag = False
     #(aqui fica o calculo aritmetico usando tList)
     while flag != True:
+        print("Iniciando calculo de media.")
     #   caso todos distoem o avg vira myTime (master time)
         if len(tList) == 0:
             print("Tempos muito distoantes setto o meu tempo.")
             avg = datetime.datetime.timestamp(myTime)
+            print("AVG", n, ":", avg)
             break
     #   media de valores em timestamp
         avg = (sum(tList)) / len(tList)
+        print(f'average = sum{tList} / {len(tList)}')
     #   se ninguem distoa seto flag == True finalizando calc media
         flag = True
-        print("AVG", avg)
+        print("AVG", n, ":", avg)
+        n = n+1
     #   check se ninguem distoa > 10s se distoa removo da lista e chama media de novo
         tAux = []
-        tAux[:] = [x for x in tList if abs(x-avg)<=mean_diff * 1000]
-        print(tList, tAux)
+        tAux[:] = [x for x in tList if abs(x-avg)<=mean_diff]
+        #print(tList, tAux)
         if len(tAux) != len(tList):
             tList = tAux
             flag = False
 
-    print("Media calculada:", avg)
-    #lista times order == nodes.txt order, logo for node in ipPortas...
-    #send atualizacao do tempo (qual tempo deve ser imposto aos nodos)
-    newTime = datetime.datetime.timestamp(myTime) + (avg - datetime.datetime.timestamp(myTime))
+    print("Media final calculada:", avg)
+    newTime = datetime.datetime.timestamp(myTime) + (avg - float(datetime.datetime.timestamp(myTime)))
+    print("Devo adiantar meu tempo em:", (avg - float(datetime.datetime.timestamp(myTime))), "s")
     myTime = datetime.datetime.fromtimestamp(newTime)
-    print(myTime)
-    print("Atualizei meu tempo:", myTime.time())
+    print("Atualizei meu tempo para:", myTime.time())
     print("Enviando mensagem para todos nodos, ordem: UPDATETIME")
     #ajustar for para percorrer 2 listas -> tempos atualizados e de nodos
     index = 0
     for node in ipPortas:
-        print("Enviando ordem de atualizacao de tempo para o nodo de IP:PORTA", node)
         #com a media calculo tp1 = avg - times[tp1] + rtt/2
-        newT = avg - times[index] # + RTT
+        newT = avg - times[index] + rtts[index]/2 # + RTT
+        print("Enviando ordem de atualizacao de tempo para o nodo de IP:PORTA", node, "para", newT, "s")
         newT = str(newT)
         send.sendto(newT.encode(), (node.split(":")[0], int(node.split(":")[1])))
         index = index + 1
 
 #processo mestre sempre sera o com id 0
 if id == '0':
-    print("Inicializando processo mestre...")
-    print(myTime.time())
-    print(datetime.datetime.timestamp(myTime))
+    print("Inicializando processo mestre...", myTime.time())
+    threading.Thread(target=clocker).start()
     #quando inicializa o mestre settar nodos
     ipPortas = readNodes("nodes.txt")
     #set timeout para recebimento de tempo dos nodos
@@ -118,28 +154,27 @@ if id == '0':
         sleep(cooldown)
 #demais processos
 else:
-    print("Inicializando nodo...")
+    print("Inicializando nodo...", myTime.time())
+    threading.Thread(target=clocker).start()
     while True:
         print("Esperando recebimento de ordem")
         #packet -> msg str com comandos
         #client -> (ip do client, porta que enviou)
         packet, client = recv.recvfrom(int(port))
         recvPacket = str(packet, "utf8")
-        print("Ordem recebida: ", recvPacket, client)
+        print("Mensagem recebida: ", recvPacket, client)
         if recvPacket == "SENDTIME":
-            #envio o meu tempo
-            print("Executando ordem de envio de tempo")
-            #count time here
+            sleep(adelay/1000)
+            sleep(ptime/1000)
             myTsStr = str(datetime.datetime.timestamp(myTime))
+            print("Executando ordem de envio de tempo", datetime.datetime.fromtimestamp(datetime.datetime.timestamp(myTime)).time())
             send.sendto(myTsStr.encode(), (str(client[0]), 1024))
         else:
             #atualizo o tempo
-            print("Executando ordem de atualizacao de tempo para", recvPacket)
+            print("Ajustando tempo em", recvPacket, "s")
             #no envio de tempo no master usar datetime.encode
             date_str = recvPacket
             date_ts = float(recvPacket)
             real_date = datetime.datetime.timestamp(myTime) + date_ts
             myTime = datetime.datetime.fromtimestamp(real_date)
-            print(myTime)
             print("Meu novo tempo: ", myTime.time())
-
